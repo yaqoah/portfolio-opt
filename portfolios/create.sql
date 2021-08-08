@@ -1,14 +1,12 @@
 -- SET foreign_key_checks = 0;
 -- DROP TABLE IF EXISTS assets, clients, investments;
 -- SET foreign_key_checks = 1;
-
-CREATE TABLE IF NOT EXISTS assets (
+CREATE TABLE assets (
 	asset_id INT AUTO_INCREMENT,
     asset_class TEXT(30),
     PRIMARY KEY (asset_id)
-); 
-
-CREATE TABLE IF NOT EXISTS clients (
+);
+CREATE TABLE clients (
 	c_id INT AUTO_INCREMENT, 
     c_name TEXT(30),
     c_Location VARCHAR(30),
@@ -19,8 +17,7 @@ CREATE TABLE IF NOT EXISTS clients (
     UNIQUE (c_email),	
     PRIMARY KEY (c_id)
 );
-
-CREATE TABLE IF NOT EXISTS investments (
+CREATE TABLE investments (
 	id INT AUTO_INCREMENT, 
 	plaform VARCHAR(50),
 	date_listed DATE, 
@@ -40,4 +37,3 @@ CREATE TABLE IF NOT EXISTS investments (
     ON DELETE CASCADE,
     PRIMARY KEY (id)
 );
-    
