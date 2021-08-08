@@ -2,8 +2,7 @@
 -- TRUNCATE TABLE assets;
 -- TRUNCATE TABLE clients;
 -- SET FOREIGN_KEY_CHECKS = 1;
-
-INSERT IGNORE INTO assets 
+INSERT INTO assets
 	(asset_class)
 VALUES 
 	('Cash and cash equivalent'), 
@@ -22,8 +21,7 @@ VALUES
     ('Commodity'), 
     ('Futures'), 
     ('Infrastructure');
-    
-INSERT IGNORE INTO clients 
+INSERT INTO clients
 	(c_name, c_location, c_mobile, c_email, contract_type)
 VALUES
 	('Sophia Joseph', 'Chicago', '+1 312 649 5541', 'thesophiejo@gmail.com', 'flexible'),
@@ -32,4 +30,3 @@ VALUES
     ('Williams Brown', 'New York', '+1 718 963 0375', 'williambr@brown.edu', 'short-term'),
     ('Hazlina Wong', 'Singapore', '+65 8458 2573', 'won8lina@gmail.com', 'flexible'),
     ('Mike Karlsson', 'Boston', '+1 617 918 4243', 'Mikesson-pr1v@gmail.com', 'flexible');
-    
