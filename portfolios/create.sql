@@ -1,6 +1,3 @@
--- SET foreign_key_checks = 0;
--- DROP TABLE IF EXISTS assets, clients, investments;
--- SET foreign_key_checks = 1;
 CREATE TABLE assets (
 	asset_id INT AUTO_INCREMENT,
     asset_class TEXT(30),
