@@ -1,7 +1,3 @@
--- SET FOREIGN_KEY_CHECKS = 0;
--- TRUNCATE TABLE assets;
--- TRUNCATE TABLE clients;
--- SET FOREIGN_KEY_CHECKS = 1;
 INSERT INTO assets
 	(asset_class)
 VALUES 
