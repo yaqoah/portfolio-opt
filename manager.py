@@ -4,9 +4,9 @@ from dotenv import load_dotenv
 import mysql.connector as db
 from mysql.connector.errors import ProgrammingError
 
-# ::::::::::::::::::::::::::::::::::::::::::::::
+# :::::::::::::::::::::::
 load_dotenv() # prepare environment variables
-# ::::::::::::::::::::::::::::::::::::::::::::::
+# :::::::::::::::::::::::
 
 mysql_host = os.getenv('MYSQL_HOST')
 mysql_user = os.getenv("MYSQL_USER")
@@ -36,15 +36,8 @@ def build():
 
 
 try:
+    cursor.execute('DROP DATABASE IF EXISTS portfolios_db')
     cursor.execute('USE ' + mysql_database + ';')
-    #debug code
-    """
-    cursor.execute(
-        '''
-        DROP DATABASE IF EXISTS portfolio_db
-        USE ''' + mysql_database + ';'
-    )
-    """
 except ProgrammingError as pr:
     if pr.errno == 1049:  # database doesn't exist
         build()
