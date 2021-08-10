@@ -4,9 +4,9 @@ from dotenv import load_dotenv
 import mysql.connector as db
 from mysql.connector.errors import ProgrammingError
 
-# :::::::::::::::::::::::
-load_dotenv() # prepare environment variables
-# :::::::::::::::::::::::
+# ::::::::::::::::::::::::::::::::::::::::::::::
+load_dotenv()  # prepare environment variables
+# ::::::::::::::::::::::::::::::::::::::::::::::
 
 mysql_host = os.getenv('MYSQL_HOST')
 mysql_user = os.getenv("MYSQL_USER")
@@ -22,11 +22,12 @@ def build():
     cursor.execute('CREATE DATABASE portfolios_db;')
     cursor.execute('USE portfolios_db;')
 
-    delimiter: list = [';', ';']
+    delimiter: list = [';', ';', '$$', ]
 
     for k, cmds in enumerate([
         open('./portfolios/create.sql'),
-        open('./portfolios/insert.sql')
+        open('./portfolios/insert.sql'),
+        open('./portfolios/advanced/queries/procedures.sql')
     ]):
         for query in cmds.read().split(delimiter[k]):
             if query:
