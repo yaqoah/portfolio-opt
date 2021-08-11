@@ -5,18 +5,39 @@ CREATE PROCEDURE add_investment (
 	IN new_date_listed DATE,
     IN new_amount DECIMAL(10,2),
     IN new_volatility DECIMAL(5,4),
-    IN new_variance DECIMAL(5,4),
-    IN new_standard_deviation DECIMAL(4,3),
-    IN new_details VARCHAR(80) )
+    IN new_variance DECIMAL(6,4) )
 BEGIN
     INSERT INTO investments
-        (id, platform, client_id,
+        (platform, client_id,
          asset_id, date_listed,
-         amount, volatility,variance,
-         standard_deviation,details)
+         amount, volatility,variance)
     VALUES
         (new_platform, new_client_id,
          new_asset_id, new_date_listed,
-         new_amount, new_volatility, new_variance,
-         new_standard_deviation, new_details);
+         new_amount, new_volatility, new_variance);
+END $$
+CREATE PROCEDURE add_client (
+    IN name TEXT(30),
+    IN mobile VARCHAR(20),
+    IN email VARCHAR(320),
+    IN client_contract TEXT(12),
+    IN client_investment_horizon INT(2))
+BEGIN
+    INSERT INTO clients
+        (c_name, c_mobile, c_email,
+        contract_type, investment_horizon)
+    VALUES
+        (name, mobile, email, client_contract,
+        client_investment_horizon);
+END $$
+CREATE PROCEDURE delete_client(
+        IN id INT,
+        IN name TEXT(30))
+BEGIN
+
+    DELETE
+        FROM clients
+    WHERE clients.c_id = id OR clients.c_name = name;
+
+
 END $$
