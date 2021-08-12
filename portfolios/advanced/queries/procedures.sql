@@ -16,6 +16,7 @@ BEGIN
          new_asset_id, new_date_listed,
          new_amount, new_volatility, new_variance);
 END $$
+
 CREATE PROCEDURE add_client (
     IN name TEXT(30),
     IN mobile VARCHAR(20),
@@ -30,6 +31,7 @@ BEGIN
         (name, mobile, email, client_contract,
         client_investment_horizon);
 END $$
+
 CREATE PROCEDURE delete_client(
         IN id INT,
         IN name TEXT(30))
@@ -38,6 +40,29 @@ BEGIN
     DELETE
         FROM clients
     WHERE clients.c_id = id OR clients.c_name = name;
+END $$
 
+CREATE PROCEDURE all_client_investments (
+    IN id INT)
+BEGIN
+    SELECT *
+        FROM investments
+    WHERE client_id = id;
+END $$
 
+CREATE PROCEDURE all_asset_classes (
+    OUT classes INT)
+BEGIN
+    SELECT COUNT(asset_id)
+        INTO classes
+    FROM assets;
+END $$
+CREATE PROCEDURE client_asset_classes (
+    IN id INT,
+    OUT clients_assets INT)
+BEGIN
+    SELECT COUNT(DISTINCT(asset_id))
+            INTO clients_assets
+        FROM investments
+    WHERE client_id = id;
 END $$
