@@ -17,6 +17,7 @@ BEGIN
          new_amount, new_volatility, new_variance);
 END $$
 
+
 CREATE PROCEDURE add_client (
     IN name TEXT(30),
     IN mobile VARCHAR(20),
@@ -32,15 +33,16 @@ BEGIN
         client_investment_horizon);
 END $$
 
+
 CREATE PROCEDURE delete_client(
         IN id INT,
         IN name TEXT(30))
 BEGIN
-
     DELETE
         FROM clients
     WHERE clients.c_id = id OR clients.c_name = name;
 END $$
+
 
 CREATE PROCEDURE all_client_investments (
     IN id INT)
@@ -50,6 +52,7 @@ BEGIN
     WHERE client_id = id;
 END $$
 
+
 CREATE PROCEDURE all_asset_classes (
     OUT classes INT)
 BEGIN
@@ -57,6 +60,8 @@ BEGIN
         INTO classes
     FROM assets;
 END $$
+
+
 CREATE PROCEDURE client_asset_classes (
     IN id INT,
     OUT clients_assets INT)
@@ -66,3 +71,22 @@ BEGIN
         FROM investments
     WHERE client_id = id;
 END $$
+
+
+CREATE PROCEDURE find_volatility (
+    IN id INT,
+    OUT total_volatility FLOAT)
+BEGIN
+    DECLARE vol_sum FLOAT;
+
+    SELECT SUM(volatility)
+        INTO vol_sum
+            FROM investments
+    WHERE client_id = id;
+
+    SET total_volatility = vol_sum;
+
+END $$
+
+
+
