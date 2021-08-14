@@ -1,5 +1,6 @@
 import os
 import getpass
+import numpy as np
 from enum import Enum
 from itertools import repeat
 from dotenv import load_dotenv
@@ -113,9 +114,9 @@ def diversity(client_id: int):
 
 def view_clients():
     cursor.execute('SELECT * FROM client_comp;')
-    rows = cursor.fetchall()
-    for row in rows:
-        print(row)
+    clients = cursor.fetchall()
+    for client in clients:
+        print(client)
 
 
 def risk():
@@ -134,6 +135,23 @@ def risk():
             print("type yes, no or equivalent")
             continue
 
-        client_id = input("What's the valid ID of the client that you want "
-                          "to check their portfolio-risk?")
+        client_id = int(input("What's the valid ID of the client that you want "
+                              "to check their portfolio-risk? "))
+        cursor.execute(f'SELECT amount, variance FROM investments WHERE client_id = {client_id};')
+        client_data = cursor.fetchall()
+        amounts = []
+        variances = []
+        weights = []
+
+        for index, record in enumerate(client_data):
+            amounts.append(client_data[index][0])
+            variances.append(client_data[index][1])
+
+        for value in amounts:
+            weights.append(value/sum(amounts))
+
+
+        print(len(client_data))
+
+risk()
 
