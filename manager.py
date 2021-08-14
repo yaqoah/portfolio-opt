@@ -25,13 +25,14 @@ def build():
     cursor.execute('CREATE DATABASE portfolios_db;')
     cursor.execute('USE portfolios_db;')
 
-    delimiter: list = [';', ';', '$$', ";"]
+    delimiter: list = [';', ';', '$$', ";", ';']
 
     for k, cmds in enumerate([
         open('./portfolios/create.sql'),
         open('./portfolios/insert.sql'),
         open('./portfolios/advanced/queries/procedures.sql'),
-        open('./portfolios/advanced/queries/calls.sql')
+        open('./portfolios/advanced/queries/calls.sql'),
+        open('./portfolios/advanced/views.sql')
     ]):
         for query in cmds.read().split(delimiter[k]):
             try:
@@ -39,7 +40,6 @@ def build():
             except ProgrammingError as blank:
                 if blank.errno == 1065:
                     continue
-
     conn.commit()
 
 
@@ -63,8 +63,8 @@ class Client:
     @staticmethod
     def assets_count(client_id: int):
         total_aclasses = [count for count in
-                          cursor.callproc( 'all_asset_classes',
-                                           [client_id])][0]
+                          cursor.callproc('all_asset_classes',
+                                          [client_id])][0]
         client_classes = [c_count for c_count in
                           cursor.callproc('client_asset_classes',
                                           list(repeat(client_id, 2)))][0]
@@ -81,10 +81,12 @@ class Levels(Enum):
 
 
 def diversity(client_id: int):
-    total_volatility = cursor.callproc('find_volatility', list(repeat(client_id, 2)))[1]
     stakes = Client.investments_count(client_id)
     classes = Client.assets_count(client_id)
-    diversity = (total_volatility/stakes) * 100
+    total_volatility = cursor.callproc('find_volatility',
+                                       list(repeat(client_id, 2)))[1]
+
+    diversity = (total_volatility / stakes) * 100
 
     if stakes in range(22, 200) and classes[1] >= 3:
         nominal_diversity = Levels.EXCELLENT.value
@@ -98,14 +100,40 @@ def diversity(client_id: int):
         nominal_diversity = Levels.POOR.value
 
     return (
-            f"(id:{client_id}) Client's portfolio volatility is {round(diversity,3)}%\n"
-            f"The volatility of the maximum diversification portfolio is 8%\n"
-            f"\nNominal (or face) value volatility indicates "
-            f"investing portfolio is {nominal_diversity}.\n"
-            f"Based on two criterias: \t 1) "
-            f"Investments split on to {classes[1]} asset class(es)\n"
-            f" \t \t \t \t 2) Total number of investments is {stakes}, "
-            f"when optimum for maximum diversification is 30."
-            )
+        f"(id:{client_id}) Client's portfolio volatility is {round(diversity, 3)}%\n"
+        f"The volatility of the maximum diversification portfolio is 8%\n"
+        f"\nNominal (or face) value volatility indicates "
+        f"investing portfolio is {nominal_diversity}.\n"
+        f"Based on two criterias: \t 1) "
+        f"Investments split on to {classes[1]} asset class(es)\n"
+        f" \t \t \t \t 2) Total number of investments is {stakes}, "
+        f"when optimum for maximum diversification is 30."
+    )
 
-print(diversity(6))
+
+def view_clients():
+    cursor.execute('SELECT * FROM client_comp;')
+    rows = cursor.fetchall()
+    for row in rows:
+        print(row)
+
+
+def risk():
+    directed = False
+    while not directed:
+        check_view = input("To calculate client's portfolio risk you need Client ID.\n"
+                           "Do you want to refer to view for client ID? (y/n)")
+        affirm = ["yes", "y", "ye", "yeah", "yup", "ya"]
+        deny = ["no", "n", "nope", "nah"]
+        if check_view in affirm:
+            view_clients()
+            directed = True
+        elif check_view in deny:
+            directed = True
+        else:
+            print("type yes, no or equivalent")
+            continue
+
+        client_id = input("What's the valid ID of the client that you want "
+                          "to check their portfolio-risk?")
+
