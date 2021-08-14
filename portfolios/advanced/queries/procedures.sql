@@ -75,7 +75,7 @@ END $$
 
 CREATE PROCEDURE find_volatility (
     IN id INT,
-    OUT total_volatility FLOAT)
+    OUT total_volatility FLOAT )
 BEGIN
     DECLARE vol_sum FLOAT;
 
@@ -89,4 +89,10 @@ BEGIN
 END $$
 
 
-
+CREATE PROCEDURE assets_amount_variance (
+    IN id INT)
+BEGIN
+    SELECT amount, variance
+        FROM investments
+    WHERE id = client_id;
+END $$
