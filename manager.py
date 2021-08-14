@@ -2,7 +2,7 @@ import os
 import getpass
 import numpy as np
 from enum import Enum
-from itertools import repeat
+from itertools import repeat, combinations
 from dotenv import load_dotenv
 import mysql.connector as db
 from mysql.connector.errors import ProgrammingError
@@ -119,6 +119,15 @@ def view_clients():
         print(client)
 
 
+def covariances(arr):
+    assets_covariance = []
+    co_assets = list(combinations(arr, 2))
+    for pair in co_assets:
+        covariance = np.sqrt(pair[0]) * np.sqrt(pair[1])
+        assets_covariance.append(covariance)
+    return assets_covariance
+
+
 def risk():
     directed = False
     while not directed:
@@ -150,8 +159,17 @@ def risk():
         for value in amounts:
             weights.append(value/sum(amounts))
 
+        assets_covariance = covariances(variances)
 
-        print(len(client_data))
+        # here sent to portfolio variance method (weights, variances, covariances)
+        '''
+        another_example = covariances([1, 2, 3, 4])
+        print(list(combinations([1, 2, 3, 4], 2)))
+        print(another_example)
+        '''
 
-risk()
-
+        '''
+        example = list(np.diag_indices(16)[0])
+        test = np.array([[1, 2], [3, 4], [5, 6]])
+        print(test[1:,1])
+        '''
