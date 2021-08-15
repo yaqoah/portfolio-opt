@@ -1,3 +1,4 @@
+import decimal
 import os
 import getpass
 import numpy as np
@@ -132,7 +133,7 @@ def risk():
     directed = False
     while not directed:
         check_view = input("To calculate client's portfolio risk you need Client ID.\n"
-                           "Do you want to refer to view for client ID? (y/n)")
+                           "Do you want to refer to view for client ID? (y/n)  ")
         affirm = ["yes", "y", "ye", "yeah", "yup", "ya"]
         deny = ["no", "n", "nope", "nah"]
         if check_view in affirm:
@@ -149,18 +150,18 @@ def risk():
         cursor.execute(f'SELECT amount, variance FROM investments WHERE client_id = {client_id};')
         client_data = cursor.fetchall()
         amounts = []
-        variances = []
+        variance = []
         weights = []
 
         for index, record in enumerate(client_data):
             amounts.append(client_data[index][0])
-            variances.append(client_data[index][1])
+            variance.append(client_data[index][1])
 
         for value in amounts:
             weights.append(value/sum(amounts))
 
-        assets_covariance = covariances(variances)
-
+        assets_covariance = covariances(variance)
+        portfolio_variance(weights, variance, assets_covariance)
         # here sent to portfolio variance method (weights, variances, covariances)
         '''
         another_example = covariances([1, 2, 3, 4])
@@ -173,3 +174,54 @@ def risk():
         test = np.array([[1, 2], [3, 4], [5, 6]])
         print(test[1:,1])
         '''
+
+
+def portfolio_variance(weights, variance, covariance):
+    dimension = len(weights)
+    correlation_matrix = np.zeros((dimension, dimension))
+    row, col = np.diag_indices(dimension)
+    correlation_matrix[row, col] = np.array(variance)
+
+    below_diag = above_diag = 1
+    height_inwards = width_inwards = dimension - 1
+    upper, ubound = height_inwards, width_inwards
+    lower, lbound = 0, 0
+
+    # To populate matrix with covariances around diagonal
+    while height_inwards and width_inwards:
+        # fill by column
+        correlation_matrix[below_diag:, below_diag - 1] = covariance[lower:upper]
+        below_diag += 1
+        lower = upper
+        height_inwards -= 1
+        upper += height_inwards
+
+        # fill by row
+        correlation_matrix[above_diag - 1, above_diag:] = covariance[lbound:ubound]
+        above_diag += 1
+        lbound = ubound
+        width_inwards -= 1
+        ubound += width_inwards
+
+    horizontal_weights_matrix = np.array(weights)
+    horizontal_weights_matrix.shape = (1, dimension)
+    horizontal_weights_matrix= horizontal_weights_matrix.astype('float64')
+
+    vertical_weights_matrix = np.array(weights)
+    vertical_weights_matrix.shape = (dimension, 1)
+    vertical_weights_matrix = vertical_weights_matrix.astype('float64')
+    result_fin = 0
+
+    try:
+        result_pre = (horizontal_weights_matrix
+                      @ correlation_matrix
+                      @ vertical_weights_matrix)
+    except TypeError as te:
+        print('error number: ', te.errno)
+    else:
+        result_fin = result_pre[0][0]
+
+    print(result_fin)
+
+
+risk()
