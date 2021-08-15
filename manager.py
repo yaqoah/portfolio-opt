@@ -132,8 +132,10 @@ def covariances(arr):
 def risk():
     directed = False
     while not directed:
-        check_view = input("To calculate client's portfolio risk you need Client ID.\n"
-                           "Do you want to refer to view for client ID? (y/n)  ")
+        check_view = input("To calculate client's portfolio risk "
+                           "you need Client ID.\n"
+                           "Do you want to refer to a table view "
+                           "for client ID? (y/n)  ")
         affirm = ["yes", "y", "ye", "yeah", "yup", "ya"]
         deny = ["no", "n", "nope", "nah"]
         if check_view in affirm:
@@ -145,35 +147,28 @@ def risk():
             print("type yes, no or equivalent")
             continue
 
-        client_id = int(input("What's the valid ID of the client that you want "
-                              "to check their portfolio-risk? "))
-        cursor.execute(f'SELECT amount, variance FROM investments WHERE client_id = {client_id};')
-        client_data = cursor.fetchall()
-        amounts = []
-        variance = []
-        weights = []
+    client_id = int(input("What's the valid ID of "
+                              "the client that you want "
+                              "to study? "))
+    cursor.execute(f'SELECT amount, variance FROM investments WHERE client_id = {client_id};')
+    client_data = cursor.fetchall()
 
-        for index, record in enumerate(client_data):
-            amounts.append(client_data[index][0])
-            variance.append(client_data[index][1])
+    amounts = []
+    variance = []
+    weights = []
+    for index, record in enumerate(client_data):
+        amounts.append(client_data[index][0])
+        variance.append(client_data[index][1])
 
-        for value in amounts:
-            weights.append(value/sum(amounts))
+    # if you want analysis over porto variance here direct to
+    # another method before point to loop and get list of point
+    # remember in that method vary weight to vary portfol
 
-        assets_covariance = covariances(variance)
-        portfolio_variance(weights, variance, assets_covariance)
-        # here sent to portfolio variance method (weights, variances, covariances)
-        '''
-        another_example = covariances([1, 2, 3, 4])
-        print(list(combinations([1, 2, 3, 4], 2)))
-        print(another_example)
-        '''
+    for value in amounts:
+        weights.append(value/sum(amounts))
 
-        '''
-        example = list(np.diag_indices(16)[0])
-        test = np.array([[1, 2], [3, 4], [5, 6]])
-        print(test[1:,1])
-        '''
+    assets_covariance = covariances(variance)
+    portfolio_variance(weights, variance, assets_covariance)
 
 
 def portfolio_variance(weights, variance, covariance):
@@ -187,7 +182,7 @@ def portfolio_variance(weights, variance, covariance):
     upper, ubound = height_inwards, width_inwards
     lower, lbound = 0, 0
 
-    # To populate matrix with covariances around diagonal
+    # To populate correlation matrix with covariances around diagonal
     while height_inwards and width_inwards:
         # fill by column
         correlation_matrix[below_diag:, below_diag - 1] = covariance[lower:upper]
@@ -203,6 +198,7 @@ def portfolio_variance(weights, variance, covariance):
         width_inwards -= 1
         ubound += width_inwards
 
+
     horizontal_weights_matrix = np.array(weights)
     horizontal_weights_matrix.shape = (1, dimension)
     horizontal_weights_matrix= horizontal_weights_matrix.astype('float64')
@@ -210,7 +206,7 @@ def portfolio_variance(weights, variance, covariance):
     vertical_weights_matrix = np.array(weights)
     vertical_weights_matrix.shape = (dimension, 1)
     vertical_weights_matrix = vertical_weights_matrix.astype('float64')
-    result_fin = 0
+    result_final = 0
 
     try:
         result_pre = (horizontal_weights_matrix
@@ -219,9 +215,48 @@ def portfolio_variance(weights, variance, covariance):
     except TypeError as te:
         print('error number: ', te.errno)
     else:
-        result_fin = result_pre[0][0]
+        result_final = result_pre[0][0]
 
-    print(result_fin)
+    if result_final:
+        return result_final
+    else:
+        print('ErRrOr CALcUlAting PoRTv ')
+        return result_final
 
 
-risk()
+def point(amounts, weights, variance, covariance):
+    means = []
+    for stock_price in amounts:
+        stock_price = float(stock_price)
+        closed_prices = 10
+        stock_prices = []
+        while closed_prices:
+            price_change = stock_price * 0.11
+            if stock_price - price_change <= 0:
+                closing = 0.0009    # lowest price for stock
+            else:
+                closing = np.random.uniform(
+                    (stock_price - price_change),
+                    (stock_price + price_change), 1)[0]
+                stock_prices.append(closing)
+            closed_prices -= 1
+        means.append(stock_prices)
+    for i, stock_closing_prices in enumerate(means):
+        stock_mean = np.mean(stock_closing_prices)
+        means[i] = stock_mean
+
+    prices_means_matrix = np.array(means)
+    prices_means_matrix.shape = (1, len(means))
+    weights.shape = (len(means), 1)
+    weight_matrix = weights.astype('float64')
+    point_variance = portfolio_variance(weights, variance, covariance)
+    point_standard_dev = np.sqrt(point_variance)
+    point_return = weight_matrix @ prices_means_matrix
+
+    return point_standard_dev, point_return
+
+
+point([1000,3444,32,667,245], 34,45,34)
+
+
+
