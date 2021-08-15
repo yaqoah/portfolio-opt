@@ -1,6 +1,8 @@
 import decimal
 import os
 import getpass
+import random
+
 import numpy as np
 from enum import Enum
 from itertools import repeat, combinations
@@ -131,6 +133,7 @@ def covariances(arr):
 
 def risk():
     directed = False
+    headed = False
     while not directed:
         check_view = input("To calculate client's portfolio risk "
                            "you need Client ID.\n"
@@ -160,15 +163,31 @@ def risk():
         amounts.append(client_data[index][0])
         variance.append(client_data[index][1])
 
-    # if you want analysis over porto variance here direct to
-    # another method before point to loop and get list of point
-    # remember in that method vary weight to vary portfol
-
     for value in amounts:
         weights.append(value/sum(amounts))
 
     assets_covariance = covariances(variance)
-    portfolio_variance(weights, variance, assets_covariance)
+
+    while not headed:
+        explore = int(input('Would you like to check '
+                        'risk value or get analysis? '
+                        '\t (choose 1 or 2)\n'
+                        '\t \t1) risk value (portfolio variance)\n'
+                        '\t \t2) graph analysis\n'))
+
+        if explore == 1:
+            portfolio_variance(weights,
+                               variance,
+                               assets_covariance)
+            headed = True
+        elif explore == 2:
+            optimisation_analysis(amounts,
+                                  variance,
+                                  assets_covariance)
+            headed = True
+        else:
+            print('Choose 1 or 2')
+            continue
 
 
 def portfolio_variance(weights, variance, covariance):
@@ -201,7 +220,7 @@ def portfolio_variance(weights, variance, covariance):
 
     horizontal_weights_matrix = np.array(weights)
     horizontal_weights_matrix.shape = (1, dimension)
-    horizontal_weights_matrix= horizontal_weights_matrix.astype('float64')
+    horizontal_weights_matrix = horizontal_weights_matrix.astype('float64')
 
     vertical_weights_matrix = np.array(weights)
     vertical_weights_matrix.shape = (dimension, 1)
@@ -226,6 +245,7 @@ def portfolio_variance(weights, variance, covariance):
 
 def point(amounts, weights, variance, covariance):
     means = []
+    random.shuffle(amounts)
     for stock_price in amounts:
         stock_price = float(stock_price)
         closed_prices = 10
@@ -244,19 +264,26 @@ def point(amounts, weights, variance, covariance):
     for i, stock_closing_prices in enumerate(means):
         stock_mean = np.mean(stock_closing_prices)
         means[i] = stock_mean
-
     prices_means_matrix = np.array(means)
-    prices_means_matrix.shape = (1, len(means))
-    weights.shape = (len(means), 1)
+    prices_means_matrix.shape = (1, len(variance))
+    weights.shape = (len(variance), 1)
     weight_matrix = weights.astype('float64')
+    prices_means_matrix = prices_means_matrix.astype('float64')
     point_variance = portfolio_variance(weights, variance, covariance)
     point_standard_dev = np.sqrt(point_variance)
     point_return = weight_matrix @ prices_means_matrix
+    exp_return = np.linalg.det(point_return) + random.uniform(0.01, 0.2)
 
-    return point_standard_dev, point_return
-
-
-point([1000,3444,32,667,245], 34,45,34)
+    return point_standard_dev, exp_return
 
 
+def optimisation_analysis(amounts, variance, covariance):
+    points = []
+    for i in range(1):
+        arb_portfolio_weighting = np.random.dirichlet(np.ones(len(variance)), 1)
+        x_y_portfolio_point = point(amounts,
+                                    arb_portfolio_weighting,
+                                    variance,
+                                    covariance)
+        points.append(x_y_portfolio_point)
 
