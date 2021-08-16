@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import mysql.connector as db
 from mysql.connector.errors import ProgrammingError
 import numpy as np
+import matplotlib.pyplot as plot
 
 import os
 import decimal
@@ -130,64 +131,43 @@ def covariances(arr):
     return assets_covariance
 
 
-def risk():
-    directed = False
-    headed = False
-    while not directed:
-        check_view = input("To calculate client's portfolio risk "
-                           "you need Client ID.\n"
-                           "Do you want to refer to a table view "
-                           "for client ID? (y/n)  ")
-        affirm = ["yes", "y", "ye", "yeah", "yup", "ya"]
-        deny = ["no", "n", "nope", "nah"]
-        if check_view in affirm:
-            view_clients()
-            directed = True
-        elif check_view in deny:
-            directed = True
-        else:
-            print("type yes, no or equivalent")
-            continue
-
-    client_id = int(input("What's the valid ID of "
-                              "the client that you want "
-                              "to study? "))
-    cursor.execute(f'SELECT amount, variance FROM investments WHERE client_id = {client_id};')
+def get_values(client_id: int):
+    view = 'SELECT amount, variance FROM investments WHERE client_id ='
+    cursor.execute(f'{view} {client_id};')
     client_data = cursor.fetchall()
 
-    amounts = []
-    variance = []
-    weights = []
+    amounts, variance, weights = [], [], []
+
     for index, record in enumerate(client_data):
         amounts.append(client_data[index][0])
         variance.append(client_data[index][1])
 
     for value in amounts:
-        weights.append(value/sum(amounts))
+        weights.append(value / sum(amounts))
 
     assets_covariance = covariances(variance)
 
-    while not headed:
-        explore = int(input('Would you like to check '
-                        'risk value or get analysis? '
-                        '\t (choose 1 or 2)\n'
-                        '\t \t1) risk value (portfolio variance)\n'
-                        '\t \t2) graph analysis\n'))
+    return amounts, weights, variance, assets_covariance
 
-        if explore == 1:
-            portfolio_variance(weights,
-                               variance,
-                               assets_covariance)
-            headed = True
-        elif explore == 2:
-            optimisation_analysis(amounts,
-                                  weights,
-                                  variance,
-                                  assets_covariance)
+
+def risk():
+    type_risk = 0
+    headed = False
+
+    while not headed:
+        type_risk = int(input('Would you like to check '
+                              'risk value or get analysis? '
+                              '\t (choose 1 or 2)\n'
+                              '\t \t1) risk value (portfolio variance)\n'
+                              '\t \t2) graph analysis\n'))
+
+        if type_risk in [1, 2]:
             headed = True
         else:
             print('Choose 1 or 2')
             continue
+
+    return type_risk
 
 
 def portfolio_variance(weights, variance, covariance):
@@ -216,7 +196,6 @@ def portfolio_variance(weights, variance, covariance):
         lbound = ubound
         width_inwards -= 1
         ubound += width_inwards
-
 
     horizontal_weights_matrix = np.array(weights)
     horizontal_weights_matrix.shape = (1, dimension)
@@ -270,26 +249,128 @@ def point(amounts, weights, variance, covariance):
     point_standard_dev = np.sqrt(point_variance)
     point_return = weight_matrix @ prices_means_matrix
     overall = point_return.sum()
-    expected_return = ((overall-float(sum(amounts))) / float(sum(amounts)))
+    expected_return = ((overall - float(sum(amounts))) / float(sum(amounts)))
 
     return point_standard_dev, expected_return
 
 
+def risk_return_tradeoff(x_risk, y_return, risk_or_return):  # low risk
+    potential_winner_ports = [[],
+                              []]
+    ratios = []
+    if risk_or_return:
+        for x in range(100):  # change 10 by number of portfolios provided and other for
+            least_risky = min(x_risk)
+            position = x_risk.index(least_risky)
+            port_return = y_return[position]
+            potential_winner_ports[0].append(least_risky)
+            potential_winner_ports[1].append(port_return)
+            x_risk.remove(least_risky)
+            y_return.remove(port_return)
+            ratio = least_risky / port_return
+            ratios.append(ratio)
+    else:
+        for y in range(100):
+            highest_return = max(y_return)
+            position = y_return.index(highest_return)
+            port_risk = x_risk[position]
+            potential_winner_ports[0].append(port_risk)
+            potential_winner_ports[1].append(highest_return)
+            x_risk.remove(port_risk)
+            y_return.remove(highest_return)
+            ratio = port_risk / highest_return
+            ratios.append(ratio)
+
+    winner_ratio = ratios.index(min(ratios))
+    x_risk_winner = potential_winner_ports[0][winner_ratio]
+    y_return_winner = potential_winner_ports[1][winner_ratio]
+    potential_winner_ports[0].remove(x_risk_winner)
+    potential_winner_ports[1].remove(y_return_winner)
+    x_risk.extend(potential_winner_ports[0])
+    y_return.extend(potential_winner_ports[1])
+
+    return [x_risk_winner, y_return_winner], x_risk, y_return
+
+
 def optimisation_analysis(amounts, weight, variance, covariance):
-    points = []
+    x_coord = []
+    y_coord = []
     arr_weight = np.array(weight)
     current_portfolio = point(amounts, arr_weight, variance, covariance)
-    points.append(current_portfolio)
-    for i in range(20):
+    x_coord.append(current_portfolio[0])
+    y_coord.append(current_portfolio[1])
+    for i in range(1000):
         arb_portfolio_weighting = np.random.dirichlet(np.ones(len(variance)), 1)
-        arb_amounts = np.array(arb_portfolio_weighting*(float(sum(amounts))))
+        arb_amounts = np.array(arb_portfolio_weighting * (float(sum(amounts))))
         new_amounts = arb_amounts.tolist()
         x_y_portfolio_point = point(new_amounts[0],
                                     arb_portfolio_weighting,
                                     variance,
                                     covariance)
-        # HERE YOU CAN GET MIN AND MAX FOR EACH AXIS
-        points.append(x_y_portfolio_point)
-        print(x_y_portfolio_point)
+        x_coord.append(x_y_portfolio_point[0])
+        y_coord.append(x_y_portfolio_point[1])
+    # for least risky portfolio
+    opt_risk, new_xs, new_ys = risk_return_tradeoff(x_coord, y_coord, 1)
+    # for highest return portfolio
+    opt_reward, final_xs, final_ys = risk_return_tradeoff(new_xs, new_ys, 0)
 
-risk()
+    return [opt_risk, opt_reward], final_xs, final_ys
+
+
+def get_id():
+    directed = False
+    while not directed:
+        check_view = input("To calculate client's portfolio risk "
+                           "you need Client ID.\n"
+                           "Do you want to refer to a table view "
+                           "for client ID? (y/n)  ")
+        affirm = ["yes", "y", "ye", "yeah", "yup", "ya"]
+        deny = ["no", "n", "nope", "nah"]
+        if check_view in affirm:
+            view_clients()
+            directed = True
+        elif check_view in deny:
+            directed = True
+        else:
+            print("type yes, no or equivalent")
+            continue
+
+    client_id = int(input("What's the valid ID of "
+                          "the client that you want "
+                          "to study? "))
+
+    return client_id
+
+
+def albarzakh():
+    client_id = get_id()
+    risk_type = risk()
+    amounts, weights, variance, assets_covariance = get_values(client_id)
+
+    if risk_type == 2:
+        print("the portfolio variance (risk) is: ",
+              portfolio_variance(weights,
+                                 variance,
+                                 assets_covariance))
+
+    return optimisation_analysis(amounts,
+                                 weights,
+                                 variance,
+                                 assets_covariance)
+
+
+special_cords, risk_coord, return_coord = albarzakh()
+
+plot.scatter(np.array(risk_coord),
+             np.array(return_coord),
+             color="lawngreen")
+
+plot.scatter(np.array(special_cords[0][0]),
+             np.array(special_cords[0][1]),
+             color="darkorange")
+
+plot.scatter(np.array(special_cords[1][0]),
+             np.array(special_cords[1][1]),
+             color="dodgerblue")
+
+plot.show()
