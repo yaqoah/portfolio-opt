@@ -1,14 +1,13 @@
-import decimal
-import os
-import getpass
-import random
-
-import numpy as np
-from enum import Enum
-from itertools import repeat, combinations
 from dotenv import load_dotenv
 import mysql.connector as db
 from mysql.connector.errors import ProgrammingError
+import numpy as np
+
+import os
+import decimal
+import getpass
+from itertools import repeat, combinations
+from enum import Enum
 
 # ::::::::::::::::::::::::::::::::::::::::::::::
 load_dotenv()  # prepares environment variables
@@ -182,6 +181,7 @@ def risk():
             headed = True
         elif explore == 2:
             optimisation_analysis(amounts,
+                                  weights,
                                   variance,
                                   assets_covariance)
             headed = True
@@ -245,20 +245,15 @@ def portfolio_variance(weights, variance, covariance):
 
 def point(amounts, weights, variance, covariance):
     means = []
-    random.shuffle(amounts)
-    for stock_price in amounts:
+    for ratio, stock_price in enumerate(amounts):
         stock_price = float(stock_price)
-        closed_prices = 10
+        closed_prices = 8
         stock_prices = []
         while closed_prices:
-            price_change = stock_price * 0.11
-            if stock_price - price_change <= 0:
-                closing = 0.0009    # lowest price for stock
-            else:
-                closing = np.random.uniform(
-                    (stock_price - price_change),
-                    (stock_price + price_change), 1)[0]
-                stock_prices.append(closing)
+            price_change = stock_price * float(variance[ratio])
+            closing = np.random.uniform(stock_price,
+                                        stock_price + price_change, 1)[0]
+            stock_prices.append(closing)
             closed_prices -= 1
         means.append(stock_prices)
     for i, stock_closing_prices in enumerate(means):
@@ -266,24 +261,35 @@ def point(amounts, weights, variance, covariance):
         means[i] = stock_mean
     prices_means_matrix = np.array(means)
     prices_means_matrix.shape = (1, len(variance))
+    amounts_matrix = np.array(amounts)
+    amounts_matrix.shape = (1, len(amounts))
     weights.shape = (len(variance), 1)
     weight_matrix = weights.astype('float64')
     prices_means_matrix = prices_means_matrix.astype('float64')
     point_variance = portfolio_variance(weights, variance, covariance)
     point_standard_dev = np.sqrt(point_variance)
     point_return = weight_matrix @ prices_means_matrix
-    exp_return = np.linalg.det(point_return) + random.uniform(0.01, 0.2)
+    overall = point_return.sum()
+    expected_return = ((overall-float(sum(amounts))) / float(sum(amounts)))
 
-    return point_standard_dev, exp_return
+    return point_standard_dev, expected_return
 
 
-def optimisation_analysis(amounts, variance, covariance):
+def optimisation_analysis(amounts, weight, variance, covariance):
     points = []
-    for i in range(1):
+    arr_weight = np.array(weight)
+    current_portfolio = point(amounts, arr_weight, variance, covariance)
+    points.append(current_portfolio)
+    for i in range(20):
         arb_portfolio_weighting = np.random.dirichlet(np.ones(len(variance)), 1)
-        x_y_portfolio_point = point(amounts,
+        arb_amounts = np.array(arb_portfolio_weighting*(float(sum(amounts))))
+        new_amounts = arb_amounts.tolist()
+        x_y_portfolio_point = point(new_amounts[0],
                                     arb_portfolio_weighting,
                                     variance,
                                     covariance)
+        # HERE YOU CAN GET MIN AND MAX FOR EACH AXIS
         points.append(x_y_portfolio_point)
+        print(x_y_portfolio_point)
 
+risk()
