@@ -2,7 +2,8 @@ from dotenv import load_dotenv
 import mysql.connector as db
 from mysql.connector.errors import ProgrammingError
 import numpy as np
-import matplotlib.pyplot as plot
+import matplotlib.pyplot as plt
+import proplot as pplt
 
 import os
 import decimal
@@ -29,14 +30,15 @@ def build():
     cursor.execute('CREATE DATABASE portfolios_db;')
     cursor.execute('USE portfolios_db;')
 
-    delimiter: list = [';', ';', '$$', ";", ';']
+    delimiter: list = [';', ';', '$$', ";", ';', '$$']
 
     for k, cmds in enumerate([
         open('./portfolios/create.sql'),
         open('./portfolios/insert.sql'),
         open('./portfolios/advanced/queries/procedures.sql'),
         open('./portfolios/advanced/queries/calls.sql'),
-        open('./portfolios/advanced/views.sql')
+        open('./portfolios/advanced/views.sql'),
+        open('./portfolios/advanced/triggers.sql')
     ]):
         for query in cmds.read().split(delimiter[k]):
             try:
@@ -77,8 +79,8 @@ class Client:
 
 
 class Levels(Enum):
-    POOR = '\033[91m' + 'poorly diverse' + '\033[0m'
-    FAIR = '\033[1m' + 'insufficiently diverse' + '\033[0m'
+    POOR = '\033[91m' + 'poor in diversity' + '\033[0m'
+    FAIR = '\033[1m' + 'insufficient in diversity' + '\033[0m'
     GOOD = '\033[4m' + 'just about diverse' + '\033[0m'
     VERY_GOOD = '\033[93m' + "well diverse" + '\033[0m'
     EXCELLENT = '\033[92m' + "highly diverse" + '\033[0m'
@@ -94,7 +96,7 @@ def diversity(client_id: int):
 
     if stakes in range(22, 200) and classes[1] >= 3:
         nominal_diversity = Levels.EXCELLENT.value
-    elif stakes in range(18, 25) and classes[1] in range(2, 4):
+    elif stakes in range(18, 25) and classes[1] == 3:
         nominal_diversity = Levels.VERY_GOOD.value
     elif stakes in range(15, 18) and classes[1] in range(4, 16):
         nominal_diversity = Levels.GOOD.value
@@ -103,16 +105,20 @@ def diversity(client_id: int):
     else:
         nominal_diversity = Levels.POOR.value
 
-    return (
-        f"(id:{client_id}) Client's portfolio volatility is {round(diversity, 3)}%\n"
-        f"The volatility of the maximum diversification portfolio is 8%\n"
-        f"\nNominal (or face) value volatility indicates "
-        f"investing portfolio is {nominal_diversity}.\n"
+    yield(
+        f"\n(id:{client_id}) Client's portfolio volatility is {round(diversity, 3)}%\n"
+        "The volatility of the maximum diversification portfolio is 8%"
+          )
+    yield(
+        f"Nominal (or face) value volatility indicates "
+        f"investing portfolio is {nominal_diversity}."
+          )
+    yield(
         f"Based on two criterias: \t 1) "
         f"Investments split on to {classes[1]} asset class(es)\n"
         f" \t \t \t \t 2) Total number of investments is {stakes}, "
-        f"when optimum for maximum diversification is 30."
-    )
+        "when optimum for maximum diversification is 30."
+          )
 
 
 def view_clients():
@@ -148,26 +154,6 @@ def get_values(client_id: int):
     assets_covariance = covariances(variance)
 
     return amounts, weights, variance, assets_covariance
-
-
-def risk():
-    type_risk = 0
-    headed = False
-
-    while not headed:
-        type_risk = int(input('Would you like to check '
-                              'risk value or get analysis? '
-                              '\t (choose 1 or 2)\n'
-                              '\t \t1) risk value (portfolio variance)\n'
-                              '\t \t2) graph analysis\n'))
-
-        if type_risk in [1, 2]:
-            headed = True
-        else:
-            print('Choose 1 or 2')
-            continue
-
-    return type_risk
 
 
 def portfolio_variance(weights, variance, covariance):
@@ -215,11 +201,7 @@ def portfolio_variance(weights, variance, covariance):
     else:
         result_final = result_pre[0][0]
 
-    if result_final:
-        return result_final
-    else:
-        print('ErRrOr CALcUlAting PoRTv ')
-        return result_final
+    return result_final
 
 
 def point(amounts, weights, variance, covariance):
@@ -259,7 +241,7 @@ def risk_return_tradeoff(x_risk, y_return, risk_or_return):  # low risk
                               []]
     ratios = []
     if risk_or_return:
-        for x in range(100):  # change 10 by number of portfolios provided and other for
+        for x in range(30):  # change 10 by number of portfolios provided and other for
             least_risky = min(x_risk)
             position = x_risk.index(least_risky)
             port_return = y_return[position]
@@ -270,7 +252,7 @@ def risk_return_tradeoff(x_risk, y_return, risk_or_return):  # low risk
             ratio = least_risky / port_return
             ratios.append(ratio)
     else:
-        for y in range(100):
+        for y in range(30):
             highest_return = max(y_return)
             position = y_return.index(highest_return)
             port_risk = x_risk[position]
@@ -299,7 +281,7 @@ def optimisation_analysis(amounts, weight, variance, covariance):
     current_portfolio = point(amounts, arr_weight, variance, covariance)
     x_coord.append(current_portfolio[0])
     y_coord.append(current_portfolio[1])
-    for i in range(1000):
+    for possible_portfolio in range(300):
         arb_portfolio_weighting = np.random.dirichlet(np.ones(len(variance)), 1)
         arb_amounts = np.array(arb_portfolio_weighting * (float(sum(amounts))))
         new_amounts = arb_amounts.tolist()
@@ -314,7 +296,7 @@ def optimisation_analysis(amounts, weight, variance, covariance):
     # for highest return portfolio
     opt_reward, final_xs, final_ys = risk_return_tradeoff(new_xs, new_ys, 0)
 
-    return [opt_risk, opt_reward], final_xs, final_ys
+    return [opt_risk, opt_reward], final_xs, final_ys, [current_portfolio[0], current_portfolio[1]]
 
 
 def get_id():
@@ -344,14 +326,10 @@ def get_id():
 
 def albarzakh():
     client_id = get_id()
-    risk_type = risk()
+    diversity_facts = diversity(client_id)
+    for fact in diversity_facts:
+        print(fact)
     amounts, weights, variance, assets_covariance = get_values(client_id)
-
-    if risk_type == 2:
-        print("the portfolio variance (risk) is: ",
-              portfolio_variance(weights,
-                                 variance,
-                                 assets_covariance))
 
     return optimisation_analysis(amounts,
                                  weights,
@@ -359,18 +337,63 @@ def albarzakh():
                                  assets_covariance)
 
 
-special_cords, risk_coord, return_coord = albarzakh()
+special_cords, risk_coord, return_coord, client_port = albarzakh()
 
-plot.scatter(np.array(risk_coord),
-             np.array(return_coord),
-             color="lawngreen")
+ax = plt.figure()
+plt.style.use('Solarize_Light2')
 
-plot.scatter(np.array(special_cords[0][0]),
-             np.array(special_cords[0][1]),
-             color="darkorange")
+plt.grid(color='#BEA100',
+         linestyle='dotted',
+         linewidth=0.4)
 
-plot.scatter(np.array(special_cords[1][0]),
-             np.array(special_cords[1][1]),
-             color="dodgerblue")
+plt.xlabel("Portfolio Variance",
+           fontname=pplt.rc['font.fantasy'],
+           fontsize=17,
+           labelpad=15)
+plt.ylabel("Expected Return",
+           fontname=pplt.rc['font.fantasy'],
+           fontsize=17,
+           labelpad=15)
+plt.title("P O R T F O L I O    O P T I M I S A T I O N",
+          fontsize=10,
+          fontname=pplt.rc['font.monospace'],
+          pad=12)
 
-plot.show()
+
+plt.plot(np.array(risk_coord),
+         np.array(return_coord),
+         "o",
+         markersize=4,
+         mfc="none",
+         color="olive",
+         label='Possible Client Portfolios')
+
+plt.plot(np.array(client_port[0]),
+         np.array(client_port[1]),
+         marker="X",
+         markersize=8,
+         color="black",
+         label="Client's Portfolio")
+
+plt.plot(np.array(special_cords[0][0]),
+         np.array(special_cords[0][1]),
+         marker="$L$",
+         markersize=6,
+         color="crimson",
+         label='Lowest Risk, Optimum Return (Portfolio)')
+
+plt.plot(np.array(special_cords[1][0]),
+         np.array(special_cords[1][1]),
+         marker="$H$",
+         markersize=7,
+         color="darkblue",
+         label='Highest Return, Optimum Risk (Portfolio)')
+
+
+plt.legend()
+
+plt.show()
+
+conn.close()
+
+cursor.close()
