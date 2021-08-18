@@ -3,6 +3,7 @@ CREATE TABLE assets (
     asset_class TEXT(30),
     PRIMARY KEY (asset_id)
 );
+
 CREATE TABLE clients (
 	c_id INT AUTO_INCREMENT,
     c_name TEXT(30),
@@ -14,6 +15,7 @@ CREATE TABLE clients (
     UNIQUE (c_email),	
     PRIMARY KEY (c_id)
 );
+
 CREATE TABLE investments (
 	id INT AUTO_INCREMENT,
 	platform VARCHAR(50),
@@ -23,10 +25,7 @@ CREATE TABLE investments (
     amount DECIMAL(10,2) NOT NULL,
     CHECK (amount > 0),
     volatility DECIMAL(5,4),
-    variance DECIMAL(5,4),
-    standard_deviation DECIMAL(4,3),
-    details VARCHAR(80) NOT NULL,
-    UNIQUE (details),
+    variance DECIMAL(8,4),
     CONSTRAINT FK_assetid
     FOREIGN KEY (asset_id)
     REFERENCES assets(asset_id), 
