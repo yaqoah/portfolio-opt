@@ -1,14 +1,18 @@
 CREATE OR REPLACE VIEW client_comp AS
-SELECT clients.c_id                         AS `Client id`,
-       clients.c_name                       AS `Client name`,
+SELECT CONCAT ( 'ClIENT ID: ',
+       clients.c_id)                        AS `Client id`,
+       CONCAT ( ' CLIENT NAME: ',
+       clients.c_name )                     AS `Client name`,
        clients.c_mobile                     AS `Mobile`,
        clients.c_email                      AS `Email`,
        CONCAT ( clients.contract_type,
        ' contract, max profits in ',
        clients.investment_horizon,
        ' years' )                           AS `Description`,
-       cid_platforms.platforms              AS `Platforms`,
-       aid_classes.asset_classes            AS `Invested Asset-Classes`
+       CONCAT ( 'Platforms in use: ',
+       cid_platforms.platforms)             AS `Platforms`,
+       CONCAT ( 'Portfolio Asset Classes: ',
+       aid_classes.asset_classes )          AS `Invested Asset-Classes`
 FROM   clients,
        (
                 SELECT   client_id                 AS cid_p,
