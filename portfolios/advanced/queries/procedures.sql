@@ -41,6 +41,8 @@ BEGIN
     DELETE
         FROM clients
     WHERE clients.c_id = id OR clients.c_name = name;
+
+    ALTER TABLE clients AUTO_INCREMENT = id;
 END $$
 
 
@@ -95,4 +97,5 @@ BEGIN
     SELECT amount, variance
         FROM investments
     WHERE id = client_id;
+
 END $$
