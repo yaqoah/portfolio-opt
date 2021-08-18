@@ -1,4 +1,4 @@
--- only upon inserting, deleting handled in advanced/procedures.sql (delete_client)
+-- only upon inserting, deleting handled in queries/procedures.sql
 
 CREATE TRIGGER investment_date
 BEFORE INSERT ON investments
